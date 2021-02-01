@@ -1,0 +1,9 @@
+{% extends 'base.html' %}
+
+{% block some_info %}
+    {{ score }}
+    <form action=""><input type="submit" value='Add'></form>
+    {% if res %}
+        {{ res }}
+    {% endif %}
+{% endblock %}

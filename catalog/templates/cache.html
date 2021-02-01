@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+
+{% block some_info %}
+    {{ count }}
+    <form action=""><input type="submit" value="add"></form>
+    <h3>Who clicked</h3>
+    {% for user in users %}
+        {{ user }}
+    {% endfor %}
+{% endblock %}

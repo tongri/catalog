@@ -1,0 +1,7 @@
+{% extends 'base.html' %}
+
+{% block some_info %}
+    {% for object in object_list %}
+        <br>{{ object }}
+    {% endfor %}
+{% endblock %}
