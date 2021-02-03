@@ -2,6 +2,40 @@
 
 {% block some_info %}
     {% for object in object_list %}
-        <br>{{ object }}
+        <form method="post">
+            {% csrf_token %}
+            <h3>{{ object.title }}</h3>
+            {% if object.photo.name %}
+                {{ object.photo }}
+            {% endif %}
+            <p>{{ object.desc }}</p>
+            <p>Amount: {{ object.amount }}</p>
+            <p><strong>{{ object.price }}</strong> UAH</p>
+            {% if user.username %}
+                <input name="amount" style="width: 100px" type="number" min="1" max="{{ object.amount }}">
+                <input name="id"  value="{{ object.id }}" type="hidden">
+                <input type="submit" value="Buy">
+            {% endif %}
+            {% if user.is_superuser %}
+                <button><a href="change/{{ object.id }}">Изменить</a></button>
+            {% endif %}
+        </form>
     {% endfor %}
+    <div class="pagination">
+        <span class="step-links">
+            {% if page_obj.has_previous %}
+                <a href="?page=1">&laquo; first</a>
+                <a href="?page={{ page_obj.previous_page_number }}">previous</a>
+            {% endif %}
+
+            <span class="current">
+                Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}.
+            </span>
+
+            {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}">next</a>
+                <a href="?page={{ page_obj.paginator.num_pages }}">last &raquo;</a>
+            {% endif %}
+        </span>
+    </div>
 {% endblock %}

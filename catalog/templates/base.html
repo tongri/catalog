@@ -4,11 +4,19 @@
     <meta charset="UTF-8">
     <title>Title</title>
 </head>
-<body>
-    {% if request.user.username %}
+<body style="font-family: sans-serif">
+    {% if user.username %}
         <button><a href="/logout">Logout</a></button>
+        {% if user.is_superuser %}
+            <button><a href="/product">Add product</a></button>
+        {% endif %}
+        <p>Balance: {{ user.balance }} UAH</p>
     {% else %}
         <button><a href="/login">Login</a></button>
+        <button><a href="/reg">Sign up</a></button>
+    {% endif %}
+    {% if name == products %}
+        <button><a href="/products">Main page</a></button>
     {% endif %}
     {% block some_info %}
     {% endblock %}
