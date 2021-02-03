@@ -4,7 +4,7 @@ from django.urls import path
 from django.views.decorators.cache import cache_page
 
 from .views import ProductCreateView, LogView, OutView, ProductViewList, GameView, CounterView, RegistrateView, \
-    ProductUpdateView, MainRedirectView
+    ProductUpdateView, MainRedirectView, OrderViewList, DiscardedOrdersViewList
 
 urlpatterns = [
     path('', MainRedirectView.as_view()),
@@ -13,6 +13,8 @@ urlpatterns = [
     path('thanks/', lambda x: HttpResponse("thanks"), name='thnx'),
     path('logout/', OutView.as_view(extra_context={'request': 'request'})),
     path('main/', lambda x: HttpResponse('main')),
+    path('orders/', OrderViewList.as_view(), name='orders'),
+    path('cancelled/', DiscardedOrdersViewList.as_view()),
     path('products/', ProductViewList.as_view(), name="products"),
     path('reg/', RegistrateView.as_view()),
     path('products/change/<int:pk>/', ProductUpdateView.as_view()),

@@ -7,16 +7,20 @@
 <body style="font-family: sans-serif">
     {% if user.username %}
         <button><a href="/logout">Logout</a></button>
+        <button><a href="/orders">My Orders</a></button>
         {% if user.is_superuser %}
-            <button><a href="/product">Add product</a></button>
+            <button ><a href="/product">Add product</a></button>
+            <button><a href="/cancelled">Manage orders</a></button>
         {% endif %}
-        <p>Balance: {{ user.balance }} UAH</p>
     {% else %}
         <button><a href="/login">Login</a></button>
         <button><a href="/reg">Sign up</a></button>
     {% endif %}
     {% if name == products %}
         <button><a href="/products">Main page</a></button>
+    {% endif %}
+    {% if user.username %}
+        <p>Balance: {{ user.balance }} UAH</p>
     {% endif %}
     {% block some_info %}
     {% endblock %}

@@ -25,7 +25,8 @@ class Order(models.Model):
     position = models.ForeignKey(Product, on_delete=models.CASCADE, default=None)
     quantity = models.PositiveSmallIntegerField(default=1)
     #relationship = models.ManyToManyField(Product, through='SingleProductOrder')
-    order_date = models.DateField(auto_now=True)
+    order_date = models.DateTimeField(auto_now_add=True)
+    discarded = models.BooleanField(default=False)
 
     def __str__(self):
         return f'{self.owner}: {self.order_date}'
@@ -42,3 +43,4 @@ class Order(models.Model):
 
 class CancelledOrder(models.Model):
     cancel = models.ForeignKey(Order, on_delete=models.CASCADE)
+    cancel_date = models.DateTimeField(auto_now_add=True)

@@ -1,24 +1,18 @@
 {% extends 'base.html' %}
 
+{% load app_extras %}
+
 {% block some_info %}
-    {% for object in object_list %}
+    {% for obj in object_list %}
         <form method="post">
             {% csrf_token %}
-            <h3>{{ object.title }}</h3>
-            {% if object.photo.name %}
-                {{ object.photo }}
-            {% endif %}
-            <p>{{ object.desc }}</p>
-            <p>Amount: {{ object.amount }}</p>
-            <p><strong>{{ object.price }}</strong> UAH</p>
-            {% if user.username %}
-                <input name="amount" style="width: 100px" value="1" type="number" min="1" max="{{ object.amount }}">
-                <input name="id"  value="{{ object.id }}" type="hidden">
-                <input type="submit" value="Buy">
-            {% endif %}
-            {% if user.is_superuser %}
-                <button><a href="change/{{ object.id }}">Изменить</a></button>
-            {% endif %}
+            <div>
+                From {{ obj.cancel.owner }} {{ obj.cancel.position.title }}
+                {{ obj.cancel.quantity }} pieces at total of
+                {{ obj.cancel.quantity|mult:obj.cancel.position.price }} UAH
+                <input type="submit" value="Submit discard">
+            </div>
+            <input type="hidden" name="id" value="{{ obj.id }}">
         </form>
     {% endfor %}
     <div class="pagination">
