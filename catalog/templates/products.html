@@ -2,7 +2,7 @@
 
 {% block some_info %}
     {% for object in object_list %}
-        <form method="post">
+        <form method="post" action="buy/">
             {% csrf_token %}
             <h3>{{ object.title }}</h3>
             {% if object.photo.name %}
@@ -14,6 +14,7 @@
             {% if user.username %}
                 <input name="amount" style="width: 100px" value="1" type="number" min="1" max="{{ object.amount }}">
                 <input name="id"  value="{{ object.id }}" type="hidden">
+                <input type="hidden" value="{{ page_obj.number }}" name="page">
                 <input type="submit" value="Buy">
             {% endif %}
             {% if user.is_superuser %}
