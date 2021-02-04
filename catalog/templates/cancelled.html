@@ -4,7 +4,7 @@
 
 {% block some_info %}
     {% for obj in object_list %}
-        <form method="post">
+        <form method="post" action="delete/">
             {% csrf_token %}
             <div>
                 From {{ obj.cancel.owner }} {{ obj.cancel.position.title }}
@@ -13,6 +13,7 @@
                 <input type="submit" value="Submit discard">
             </div>
             <input type="hidden" name="id" value="{{ obj.id }}">
+            <input type="hidden" name="page" value="{{ page_obj.number }}">
         </form>
     {% endfor %}
     <div class="pagination">

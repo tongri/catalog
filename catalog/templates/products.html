@@ -1,6 +1,9 @@
 {% extends 'base.html' %}
 
 {% block some_info %}
+    {% for message in messages %}
+        <h3 style="color: #ff9c00">{{ message }}</h3>
+    {% endfor %}
     {% for object in object_list %}
         <form method="post" action="buy/">
             {% csrf_token %}

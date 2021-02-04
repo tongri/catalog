@@ -3,14 +3,18 @@
 {% load app_extras %}
 
 {% block some_info %}
+    {% for message in messages %}
+        <h3 style="color: #ff9c00">{{ message }}</h3>
+    {% endfor %}
     {% for obj in object_list %}
         {% if not obj.discarded %}
-            <form method="post">
+            <form method="post" action="discard/">
             {% csrf_token %}
                 <div style="padding-top: 20px">
                     {{ obj.position.title }}: {{ obj.quantity }} pieces on {{ obj.order_date }}
                      with total {{ obj.quantity|mult:obj.position.price }} UAH
                     <input type="hidden" value="{{ obj.id }}" name="id">
+                    <input type="hidden" value="{{ page_obj.number }}" name="page">
                     <input type="submit" value="Discard">
                 </div>
             </form>

@@ -3,6 +3,8 @@ from django.contrib import messages
 from django.contrib.auth import login, authenticate
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.core.exceptions import ValidationError
+from django.db.models.signals import pre_save
+from django.dispatch import receiver
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render
 from django.contrib.auth.views import LoginView, LogoutView
@@ -14,8 +16,17 @@ import random
 from .forms import LoginForm, ProductForm, RegForm
 from .models import MyUser, Product, Order, CancelledOrder
 
+from django.dispatch import Signal
+
 
 # Create your views here.
+
+created_order = Signal()
+
+'''@receiver(created_order, sender=Order)
+def some(**kwargs):
+    req = kwargs['request']
+    messages.info(req, 'thanks for order')'''
 
 class LogView(LoginView):
     template_name = 'log.html'
@@ -80,13 +91,16 @@ class ProductViewList(ListView):
 class BuyProductView(RedirectView):
 
     def get(self, request, *args, **kwargs):
-        user_amount = int(request.POST['amount'])
+        user_amount = request.POST.get('amount')
+        if user_amount is None:
+            return HttpResponseRedirect('/products/')
+        user_amount = int(user_amount)
         product_id = request.POST['id']
-        product = Product.objects.filter(id=product_id).first()
+        product = Product.objects.get(id=product_id)
         self.url = f"/products/?page={request.POST['page']}"
         if user_amount <= product.amount:
             user_id = request.user.id
-            user = MyUser.objects.filter(id=user_id).first()
+            user = MyUser.objects.get(id=user_id)
             if user.balance - (product.price * user_amount) >= 0:
                 user.balance -= product.price * user_amount
                 product.amount -= user_amount
@@ -94,15 +108,20 @@ class BuyProductView(RedirectView):
                 ord.save()
                 product.save()
                 user.save()
+            else:
+                messages.info(request, 'Sorry, u dont have enough money')
+        else:
+            messages.info(request, 'Sorry, we dont have so much of it')
+        created_order.send(sender=Order, request=self.request)
         return super().get(request=self.request, *args, **kwargs)
-    
+
 
 class OrderViewList(LoginRequiredMixin, ListView):
     login_url = "/login"
     model = Order
     template_name = 'orders.html'
     paginate_by = 5
-    ordering = ['order_date']
+    ordering = ['-order_date']
 
     def get_queryset(self):
         queryset = Order.objects.filter(owner__id=self.request.user.id)
@@ -113,14 +132,23 @@ class OrderViewList(LoginRequiredMixin, ListView):
         queryset = queryset.order_by(*ordering)
         return queryset
 
-    def post(self, request, *args, **kwargs):
-        order = Order.objects.filter(id=request.POST['id']).first()
+
+class OrderDiscardRedirect(RedirectView):
+
+    def get(self, request, *args, **kwargs):
+        post_id = request.POST.get('id')
+        if post_id is None:
+            return HttpResponseRedirect('/orders')
+        order = Order.objects.get(id=post_id)
+        page = request.POST.get('page')
         if datetime.now(timezone.utc) - order.order_date <= timedelta(minutes=3):
             cancelled_order = CancelledOrder.objects.create(cancel=order)
             order.discarded = True
             order.save()
             cancelled_order.save()
-        return HttpResponseRedirect("/orders")
+        else:
+            messages.info(request, 'You had only 3 minutes to do it')
+        return HttpResponseRedirect(f"/orders/?page={page}")
 
 
 class DiscardedOrdersViewList(PermissionRequiredMixin, ListView):
@@ -129,19 +157,25 @@ class DiscardedOrdersViewList(PermissionRequiredMixin, ListView):
     fields = '__all__'
     template_name = 'cancelled.html'
     paginate_by = 5
+    login_url = 'products'
 
-    def post(self, request, *args, **kwargs):
-        post_id = request.POST['id']
-        usr_id = CancelledOrder.objects.filter(id=post_id).first().cancel.owner.id
-        usr = MyUser.objects.filter(id=usr_id).first()
-        price = CancelledOrder.objects.filter(id=post_id).first().cancel.position.price
-        amount = CancelledOrder.objects.filter(id=post_id).first().cancel.quantity
+
+class DeleteDiscardedRedirect(RedirectView):
+
+    def get(self, request, *args, **kwargs):
+        post_id = request.POST.get('id')
+        if post_id is None:
+            return HttpResponseRedirect('products/')
+        usr_id = CancelledOrder.objects.get(id=post_id).cancel.owner.id
+        usr = MyUser.objects.get(id=usr_id)
+        price = CancelledOrder.objects.get(id=post_id).cancel.position.price
+        amount = CancelledOrder.objects.get(id=post_id).cancel.quantity
         usr.balance += amount*price
         usr.save()
-        product = CancelledOrder.objects.filter(id=post_id).first().cancel.position
+        product = CancelledOrder.objects.get(id=post_id).cancel.position
         product.amount += amount
         product.save()
-        CancelledOrder.objects.filter(id=post_id).first().cancel.delete()
+        CancelledOrder.objects.get(id=post_id).cancel.delete()
         return HttpResponseRedirect('/cancelled')
 
 
