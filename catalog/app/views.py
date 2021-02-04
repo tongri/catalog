@@ -25,7 +25,7 @@ class LogView(LoginView):
         return self.success_url
 
     def get(self, *args, **kwargs):
-        if self.request.user.username:
+        if self.request.user.is_authenticated:
             return HttpResponseRedirect('/products')
         return super().get(request=self.request)
 

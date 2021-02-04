@@ -9,9 +9,9 @@ from .views import ProductCreateView, LogView, OutView, ProductViewList, GameVie
 urlpatterns = [
     path('', MainRedirectView.as_view()),
     path('product/', ProductCreateView.as_view()),
-    path('login/', LogView.as_view(extra_context={'request': 'request'})),
+    path('login/', LogView.as_view()),
     path('thanks/', lambda x: HttpResponse("thanks"), name='thnx'),
-    path('logout/', OutView.as_view(extra_context={'request': 'request'})),
+    path('logout/', OutView.as_view()),
     path('main/', lambda x: HttpResponse('main')),
     path('orders/', OrderViewList.as_view(), name='orders'),
     path('cancelled/', DiscardedOrdersViewList.as_view()),
