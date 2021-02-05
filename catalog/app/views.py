@@ -2,31 +2,14 @@ from datetime import datetime, timezone, timedelta
 from django.contrib import messages
 from django.contrib.auth import login, authenticate
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
-from django.core.exceptions import ValidationError
-from django.db.models.signals import pre_save
-from django.dispatch import receiver
-from django.http import HttpResponse, HttpResponseRedirect
-from django.shortcuts import render
+from django.http import HttpResponseRedirect
 from django.contrib.auth.views import LoginView, LogoutView
-from django.urls import reverse
-from django.views.generic import CreateView, ListView, TemplateView, FormView, UpdateView, RedirectView
-from django.core.cache import cache
-import random
-
-from .forms import LoginForm, ProductForm, RegForm
+from django.views.generic import CreateView, ListView, FormView, UpdateView, RedirectView
+from .forms import ProductForm, RegForm
 from .models import MyUser, Product, Order, CancelledOrder
-
-from django.dispatch import Signal
-
 
 # Create your views here.
 
-created_order = Signal()
-
-'''@receiver(created_order, sender=Order)
-def some(**kwargs):
-    req = kwargs['request']
-    messages.info(req, 'thanks for order')'''
 
 class LogView(LoginView):
     template_name = 'log.html'
@@ -46,21 +29,16 @@ class RegistrateView(FormView):
     template_name = 'log.html'
     success_url = '/products'
 
-    def post(self, request, *args, **kwargs):
-        form = self.get_form()
-        if form.is_valid():
-            username = form.cleaned_data['name']
-            password = form.cleaned_data['password']
-            MyUser.objects.create_user(username=username, email=None, password=password)
-            user = authenticate(request, username=username, password=password)
-            login(request, user)
-            return HttpResponseRedirect('/products')
-        else:
-            form.errors.update({'passes': 'passwords do not match'})
-            return self.form_invalid(form)
+    def form_valid(self, form):
+        username = form.cleaned_data['name']
+        password = form.cleaned_data['password']
+        MyUser.objects.create_user(username=username, email=None, password=password)
+        user = authenticate(self.request, username=username, password=password)
+        login(self.request, user)
+        return super().form_valid(form)
 
     def get(self, request, *args, **kwargs):
-        if self.request.user.username:
+        if self.request.user.is_authenticated:
             return HttpResponseRedirect('/products')
         else:
             return super().get(request=request, *args, **kwargs)
@@ -108,10 +86,11 @@ class BuyProductView(RedirectView):
                 ord.save()
                 product.save()
                 user.save()
+                messages.info(request, 'Thnx 4 order')
             else:
-                messages.info(request, 'Sorry, u dont have enough money')
+                messages.error(request, 'Sorry, u dont have enough money')
         else:
-            messages.info(request, 'Sorry, we dont have so much of it')
+            messages.error(request, 'Sorry, we dont have so much of it')
         created_order.send(sender=Order, request=self.request)
         return super().get(request=self.request, *args, **kwargs)
 

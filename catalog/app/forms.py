@@ -2,13 +2,7 @@ from django.core.exceptions import ValidationError
 from django.forms import ModelForm
 from django import forms
 
-from .models import MyUser, Product, Order
-
-
-class LoginForm(ModelForm):
-    class Meta:
-        model = MyUser
-        fields = ['username', 'password']
+from .models import Product, Order
 
 
 class RegForm(forms.Form):
@@ -25,11 +19,3 @@ class ProductForm(ModelForm):
     class Meta:
         model = Product
         fields = ['title', 'desc', 'amount', 'price', 'photo']
-
-
-class OrderForm(ModelForm):
-    class Meta:
-        model = Order
-        fields = ['owner', 'position', 'quantity']
-
-

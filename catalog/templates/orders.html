@@ -4,7 +4,8 @@
 
 {% block some_info %}
     {% for message in messages %}
-        <h3 style="color: #ff9c00">{{ message }}</h3>
+        <h3 style="color: #ff9c00">
+            {{ message }}</h3>
     {% endfor %}
     {% for obj in object_list %}
         {% if not obj.discarded %}

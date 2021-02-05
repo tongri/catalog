@@ -2,7 +2,9 @@
 
 {% block some_info %}
     {% for message in messages %}
-        <h3 style="color: #ff9c00">{{ message }}</h3>
+        <h3 {% if message.level_tag == 'info' %}style="color: #19ff00" {% else %}
+            style="color: #ff0015"{% endif %}>
+            {{ message }}</h3>
     {% endfor %}
     {% for object in object_list %}
         <form method="post" action="buy/">
