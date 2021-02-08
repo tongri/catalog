@@ -1,27 +1,41 @@
+{% load static %}
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>Title</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta1/dist/css/bootstrap.min.css"
+          rel="stylesheet" integrity="sha384-giJF6kkoqNQ00vy+HMDP7azOuL0xtbfIcaT9wjKHr8RbDVddVHyTfAAsrekwKmP1"
+          crossorigin="anonymous">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
 </head>
-<body style="font-family: sans-serif">
+<body>
+    <div class="container">
+    <div class="d-flex justify-content-end buttons">
     {% if user.username %}
-        <button><a href="/logout">Logout</a></button>
-        <button><a href="/orders">My Orders</a></button>
+        <a href="/logout"><button class="btn btn-primary">Logout</button></a>
+        <a href="/orders"><button class="btn btn-primary">My Orders</button></a>
         {% if user.is_superuser %}
-            <button ><a href="/product">Add product</a></button>
-            <button><a href="/cancelled">Manage orders</a></button>
+
+            <a href="/product"><button class="btn btn-primary">Add product</button></a>
+
+            <a href="/cancelled"><button class="btn btn-primary">Manage orders</button></a>
+
         {% endif %}
     {% else %}
-        <button><a href="/login">Login</a></button>
-        <button><a href="/reg">Sign up</a></button>
+        <a href="/login"><button class="btn btn-primary">Login</button></a>
+        <a href="/reg"><button class="btn btn-primary">Sign up</button></a>
     {% endif %}
     {% if name == products %}
-        <button><a href="/products">Main page</a></button>
+        <a href="/products"><button class="btn btn-primary">Main page</button></a>
     {% endif %}
     {% if user.username %}
-        <p>Balance: {{ user.balance }} UAH</p>
+        <p id="you">Balance: {{ user.balance }} UAH</p>
     {% endif %}
+    </div>
+    </div>
     {% block some_info %}
     {% endblock %}
 </body>

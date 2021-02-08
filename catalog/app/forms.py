@@ -2,7 +2,7 @@ from django.core.exceptions import ValidationError
 from django.forms import ModelForm
 from django import forms
 
-from .models import Product, Order
+from .models import Product
 
 
 class RegForm(forms.Form):
@@ -18,4 +18,4 @@ class RegForm(forms.Form):
 class ProductForm(ModelForm):
     class Meta:
         model = Product
-        fields = ['title', 'desc', 'amount', 'price', 'photo']
+        exclude = '__all__'

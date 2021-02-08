@@ -8,6 +8,7 @@ from django.views.generic import CreateView, ListView, FormView, UpdateView, Red
 from .forms import ProductForm, RegForm
 from .models import MyUser, Product, Order, CancelledOrder
 
+
 # Create your views here.
 
 
@@ -18,7 +19,7 @@ class LogView(LoginView):
     def get_success_url(self):
         return self.success_url
 
-    def get(self, *args, **kwargs):
+    def get(self, *args, **kwargs):  # Redirect to main page if authenticated
         if self.request.user.is_authenticated:
             return HttpResponseRedirect('/products')
         return super().get(request=self.request)
@@ -29,7 +30,7 @@ class RegistrateView(FormView):
     template_name = 'log.html'
     success_url = '/products'
 
-    def form_valid(self, form):
+    def form_valid(self, form):  # Create new user and log him in
         username = form.cleaned_data['name']
         password = form.cleaned_data['password']
         MyUser.objects.create_user(username=username, email=None, password=password)
@@ -37,7 +38,7 @@ class RegistrateView(FormView):
         login(self.request, user)
         return super().form_valid(form)
 
-    def get(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs): # Redirect to main page if authenticated
         if self.request.user.is_authenticated:
             return HttpResponseRedirect('/products')
         else:
@@ -50,7 +51,9 @@ class OutView(LogoutView):
     next_page = '/products'
 
 
-class ProductCreateView(CreateView):
+class ProductCreateView(PermissionRequiredMixin, CreateView):
+    login_url = '/login/'
+    permission_required = 'request.user.is_superuser'
     model = Product
     form_class = ProductForm
     success_url = '/product'
@@ -60,22 +63,30 @@ class ProductCreateView(CreateView):
 class ProductViewList(ListView):
     model = Product
     template_name = 'products.html'
-    form_class = ProductForm
     paginate_by = 3
-    ordering = ['price']
+    ordering = ['-amount', 'price']
     extra_context = {'name': 'products'}
 
 
-class BuyProductView(RedirectView):
+class OrderCreateView(CreateView):
+    model = Order
+    fields = '__all__'
 
     def get(self, request, *args, **kwargs):
-        user_amount = request.POST.get('amount')
-        if user_amount is None:
+        if request.POST.get('id') is None:
             return HttpResponseRedirect('/products/')
+
+    def get_success_url(self):
+        return f"/products/?page={self.request.POST.get('page')}"
+
+    def post(self, request, *args, **kwargs): # Creating an order
+        user_amount = request.POST.get('amount')
+        if user_amount <= 0:
+            messages.error(request, 'Sorry, wrong number of product to buy')
+            return HttpResponseRedirect(self.get_success_url())
         user_amount = int(user_amount)
         product_id = request.POST['id']
         product = Product.objects.get(id=product_id)
-        self.url = f"/products/?page={request.POST['page']}"
         if user_amount <= product.amount:
             user_id = request.user.id
             user = MyUser.objects.get(id=user_id)
@@ -90,9 +101,8 @@ class BuyProductView(RedirectView):
             else:
                 messages.error(request, 'Sorry, u dont have enough money')
         else:
-            messages.error(request, 'Sorry, we dont have so much of it')
-        created_order.send(sender=Order, request=self.request)
-        return super().get(request=self.request, *args, **kwargs)
+            messages.error(request, 'Sorry, wrong number of product to buy')
+        return HttpResponseRedirect(self.get_success_url())
 
 
 class OrderViewList(LoginRequiredMixin, ListView):
@@ -112,9 +122,10 @@ class OrderViewList(LoginRequiredMixin, ListView):
         return queryset
 
 
-class OrderDiscardRedirect(RedirectView):
+class OrderDiscardView(LoginRequiredMixin, CreateView):
+    login_url = '/login/'
 
-    def get(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs): # Discarding the order
         post_id = request.POST.get('id')
         if post_id is None:
             return HttpResponseRedirect('/orders')
@@ -139,9 +150,10 @@ class DiscardedOrdersViewList(PermissionRequiredMixin, ListView):
     login_url = 'products'
 
 
-class DeleteDiscardedRedirect(RedirectView):
+class DeleteDiscardedView(PermissionRequiredMixin, CreateView):
+    permission_required = 'request.user.is_superuser'
 
-    def get(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs): # Submitting the cancel of order
         post_id = request.POST.get('id')
         if post_id is None:
             return HttpResponseRedirect('products/')
@@ -149,7 +161,7 @@ class DeleteDiscardedRedirect(RedirectView):
         usr = MyUser.objects.get(id=usr_id)
         price = CancelledOrder.objects.get(id=post_id).cancel.position.price
         amount = CancelledOrder.objects.get(id=post_id).cancel.quantity
-        usr.balance += amount*price
+        usr.balance += amount * price
         usr.save()
         product = CancelledOrder.objects.get(id=post_id).cancel.position
         product.amount += amount

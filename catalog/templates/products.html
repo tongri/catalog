@@ -7,7 +7,7 @@
             {{ message }}</h3>
     {% endfor %}
     {% for object in object_list %}
-        <form method="post" action="buy/">
+        <form method="post" action="/products/buy/">
             {% csrf_token %}
             <h3>{{ object.title }}</h3>
             {% if object.photo.name %}
