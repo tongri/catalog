@@ -15,21 +15,21 @@
     <div class="container">
     <div class="d-flex justify-content-end buttons">
     {% if user.username %}
-        <a href="/logout"><button class="btn btn-primary">Logout</button></a>
-        <a href="/orders"><button class="btn btn-primary">My Orders</button></a>
+        <a href="{% url 'logout' %}"><button class="btn btn-primary">Logout</button></a>
+        <a href="{% url 'orders' %}"><button class="btn btn-primary">My Orders</button></a>
         {% if user.is_superuser %}
 
-            <a href="/product"><button class="btn btn-primary">Add product</button></a>
+            <a href="{% url 'create' %}"><button class="btn btn-primary">Add product</button></a>
 
-            <a href="/cancelled"><button class="btn btn-primary">Manage orders</button></a>
+            <a href="{% url 'discarded_orders' %}"><button class="btn btn-primary">Manage orders</button></a>
 
         {% endif %}
     {% else %}
-        <a href="/login"><button class="btn btn-primary">Login</button></a>
-        <a href="/reg"><button class="btn btn-primary">Sign up</button></a>
+        <a href="{% url 'login' %}"><button class="btn btn-primary">Login</button></a>
+        <a href="{% url 'registrate' %}"><button class="btn btn-primary">Sign up</button></a>
     {% endif %}
     {% if name == products %}
-        <a href="/products"><button class="btn btn-primary">Main page</button></a>
+        <a href="{% url 'products' %}"><button class="btn btn-primary">Main page</button></a>
     {% endif %}
     {% if user.username %}
         <p id="you">Balance: {{ user.balance }} UAH</p>

@@ -4,8 +4,9 @@ from django.contrib.auth import login, authenticate
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.http import HttpResponseRedirect
 from django.contrib.auth.views import LoginView, LogoutView
-from django.views.generic import CreateView, ListView, FormView, UpdateView, RedirectView
-from .forms import ProductForm, RegForm
+from django.urls import reverse, reverse_lazy
+from django.views.generic import CreateView, ListView, FormView, UpdateView, RedirectView, DeleteView
+from .forms import ProductForm, RegForm, OrderForm, DiscardForm
 from .models import MyUser, Product, Order, CancelledOrder
 
 
@@ -38,81 +39,77 @@ class RegistrateView(FormView):
         login(self.request, user)
         return super().form_valid(form)
 
-    def get(self, request, *args, **kwargs): # Redirect to main page if authenticated
+    def get(self, request, *args, **kwargs):  # Redirect to main page if authenticated
         if self.request.user.is_authenticated:
             return HttpResponseRedirect('/products')
         else:
             return super().get(request=request, *args, **kwargs)
 
 
-class OutView(LogoutView):
+class OutView(LogoutView):  # view for logging user out
     login_url = '/products'
     template_name = 'index.html'
     next_page = '/products'
 
 
-class ProductCreateView(PermissionRequiredMixin, CreateView):
-    login_url = '/login/'
+class ProductCreateView(PermissionRequiredMixin, CreateView):  # view for creating products by admin
+    login_url = '/login'
     permission_required = 'request.user.is_superuser'
     model = Product
     form_class = ProductForm
-    success_url = '/product'
+    success_url = '/products/'
     template_name = 'index.html'
 
 
-class ProductViewList(ListView):
+class ProductViewList(ListView):  # view to show all products
     model = Product
     template_name = 'products.html'
     paginate_by = 3
+    http_method_names = ['get', 'post']
     ordering = ['-amount', 'price']
     extra_context = {'name': 'products'}
 
 
-class OrderCreateView(CreateView):
+class OrderCreateView(CreateView):  # view to buy a product
     model = Order
-    fields = '__all__'
+    form_class = OrderForm
+    success_url = '/products/'
 
-    def get(self, request, *args, **kwargs):
-        if request.POST.get('id') is None:
-            return HttpResponseRedirect('/products/')
+    def get(self, request, *args, **kwargs):  # if user tries to get by url
+        return HttpResponseRedirect(reverse('products'))
 
-    def get_success_url(self):
-        return f"/products/?page={self.request.POST.get('page')}"
-
-    def post(self, request, *args, **kwargs): # Creating an order
-        user_amount = request.POST.get('amount')
+    def form_valid(self, form):
+        user_amount = int(form.cleaned_data.get('quantity'))
         if user_amount <= 0:
-            messages.error(request, 'Sorry, wrong number of product to buy')
-            return HttpResponseRedirect(self.get_success_url())
-        user_amount = int(user_amount)
-        product_id = request.POST['id']
-        product = Product.objects.get(id=product_id)
-        if user_amount <= product.amount:
-            user_id = request.user.id
-            user = MyUser.objects.get(id=user_id)
-            if user.balance - (product.price * user_amount) >= 0:
+            messages.error(self.request, 'Sorry, wrong number of product to buy')
+            return HttpResponseRedirect(self.success_url)
+        product = form.cleaned_data.get('position')
+        product.amount = int(product.amount)
+        if user_amount <= product.amount:  # check if there is enough products to buy
+            user = form.cleaned_data.get('owner')
+            if user.balance - (product.price * user_amount) >= 0:  # check if user has enough money
                 user.balance -= product.price * user_amount
                 product.amount -= user_amount
                 ord = Order.objects.create(owner=user, position=product, quantity=user_amount)
                 ord.save()
                 product.save()
                 user.save()
-                messages.info(request, 'Thnx 4 order')
+                messages.info(self.request, 'Thnx 4 order')
             else:
-                messages.error(request, 'Sorry, u dont have enough money')
+                messages.error(self.request, 'Sorry, u dont have enough money')
         else:
-            messages.error(request, 'Sorry, wrong number of product to buy')
-        return HttpResponseRedirect(self.get_success_url())
+            messages.error(self.request, 'Sorry, wrong number of product to buy')
+        return HttpResponseRedirect(self.success_url)
 
 
-class OrderViewList(LoginRequiredMixin, ListView):
+class OrderViewList(LoginRequiredMixin, ListView):  # view to show user's orders
     login_url = "/login"
     model = Order
     template_name = 'orders.html'
     paginate_by = 5
     ordering = ['-order_date']
 
-    def get_queryset(self):
+    def get_queryset(self):  # get queryset for exact user
         queryset = Order.objects.filter(owner__id=self.request.user.id)
         ordering = self.get_ordering()
         if ordering:
@@ -122,61 +119,54 @@ class OrderViewList(LoginRequiredMixin, ListView):
         return queryset
 
 
-class OrderDiscardView(LoginRequiredMixin, CreateView):
+class OrderDiscardView(LoginRequiredMixin, CreateView):  # view to cancel order
+    model = CancelledOrder
+    form_class = DiscardForm
     login_url = '/login/'
 
-    def post(self, request, *args, **kwargs): # Discarding the order
-        post_id = request.POST.get('id')
-        if post_id is None:
-            return HttpResponseRedirect('/orders')
+    def get(self):  # if user tries to get by url
+        return HttpResponseRedirect(reverse('orders'))
+
+    def form_valid(self, form):
+        post_id = form.cleaned_data.get('cancel').id
         order = Order.objects.get(id=post_id)
-        page = request.POST.get('page')
         if datetime.now(timezone.utc) - order.order_date <= timedelta(minutes=3):
+            # user has 3 minutes to discard order
             cancelled_order = CancelledOrder.objects.create(cancel=order)
             order.discarded = True
             order.save()
             cancelled_order.save()
         else:
-            messages.info(request, 'You had only 3 minutes to do it')
-        return HttpResponseRedirect(f"/orders/?page={page}")
+            messages.info(self.request, 'You had only 3 minutes to do it')
+        return HttpResponseRedirect(reverse('orders'))
 
 
 class DiscardedOrdersViewList(PermissionRequiredMixin, ListView):
+    """View for admin to see all discarded orders"""
     permission_required = 'request.user.is_superuser'
     model = CancelledOrder
-    fields = '__all__'
     template_name = 'cancelled.html'
     paginate_by = 5
     login_url = 'products'
 
 
-class DeleteDiscardedView(PermissionRequiredMixin, CreateView):
+class DeleteDiscardedView(PermissionRequiredMixin, DeleteView):
+    """View to submit the discard"""
+    model = CancelledOrder
     permission_required = 'request.user.is_superuser'
-
-    def post(self, request, *args, **kwargs): # Submitting the cancel of order
-        post_id = request.POST.get('id')
-        if post_id is None:
-            return HttpResponseRedirect('products/')
-        usr_id = CancelledOrder.objects.get(id=post_id).cancel.owner.id
-        usr = MyUser.objects.get(id=usr_id)
-        price = CancelledOrder.objects.get(id=post_id).cancel.position.price
-        amount = CancelledOrder.objects.get(id=post_id).cancel.quantity
-        usr.balance += amount * price
-        usr.save()
-        product = CancelledOrder.objects.get(id=post_id).cancel.position
-        product.amount += amount
-        product.save()
-        CancelledOrder.objects.get(id=post_id).cancel.delete()
-        return HttpResponseRedirect('/cancelled')
+    success_url = reverse_lazy('discarded_orders')
 
 
 class ProductUpdateView(PermissionRequiredMixin, UpdateView):
+    """Adding products by admin"""
     permission_required = 'request.user.is_superuser'
     model = Product
+    http_method_names = ['get', 'post']
     fields = '__all__'
     template_name = 'change_product.html'
-    success_url = "/products"
+    success_url = "/products/"
 
 
 class MainRedirectView(RedirectView):
+    """Redirect from empty url"""
     url = "/products/"

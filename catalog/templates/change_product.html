@@ -2,7 +2,7 @@
 
 {% block some_info %}
     <br>
-    <form action="" method="post">
+    <form method="post">
     {% csrf_token %}
         {% for field in form %}
             <br>{{ field }}<br>

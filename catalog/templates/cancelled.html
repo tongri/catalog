@@ -4,7 +4,7 @@
 
 {% block some_info %}
     {% for obj in object_list %}
-        <form method="post" action="delete/">
+        <form method="post" action="{% url 'delete_discarded' pk=obj.id %}">
             {% csrf_token %}
             <div>
                 From {{ obj.cancel.owner }} {{ obj.cancel.position.title }}

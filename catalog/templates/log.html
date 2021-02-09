@@ -5,7 +5,7 @@
     <title>Title</title>
 </head>
 <body style="font-family: sans-serif">
-    <button><a href="/products">Main page</a></button>
+    <button><a href="{% url 'products' %}">Main page</a></button>
     <form method="POST">
         {% csrf_token %}
         {{ form }}

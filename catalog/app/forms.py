@@ -2,7 +2,7 @@ from django.core.exceptions import ValidationError
 from django.forms import ModelForm
 from django import forms
 
-from .models import Product
+from .models import Product, Order, MyUser, CancelledOrder
 
 
 class RegForm(forms.Form):
@@ -19,3 +19,29 @@ class ProductForm(ModelForm):
     class Meta:
         model = Product
         exclude = '__all__'
+
+    def is_valid(self):
+        return super().is_valid()
+
+
+class OrderForm(ModelForm):
+    class Meta:
+        model = Order
+        fields = '__all__'
+
+    def is_valid(self):
+        self.data = self.data.copy()
+        self.data['position'] = Product.objects.get(id=self.data['position'])
+        self.data['owner'] = MyUser.objects.get(id=self.data['owner'])
+        return super().is_valid()
+
+
+class DiscardForm(ModelForm):
+    class Meta:
+        model = CancelledOrder
+        fields = '__all__'
+
+    def is_valid(self):
+        self.data = self.data.copy()
+        self.data['cancel'] = Order.objects.get(id=self.data['cancel'])
+        return super().is_valid()

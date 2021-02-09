@@ -9,13 +9,12 @@
     {% endfor %}
     {% for obj in object_list %}
         {% if not obj.discarded %}
-            <form method="post" action="discard/">
+            <form method="post" action="{% url 'discard_order' %}">
             {% csrf_token %}
                 <div style="padding-top: 20px">
                     {{ obj.position.title }}: {{ obj.quantity }} pieces on {{ obj.order_date }}
                      with total {{ obj.quantity|mult:obj.position.price }} UAH
-                    <input type="hidden" value="{{ obj.id }}" name="id">
-                    <input type="hidden" value="{{ page_obj.number }}" name="page">
+                    <input type="hidden" value="{{ obj.id }}" name="cancel">
                     <button type="submit" class="btn btn-primary">Submit</button>
                 </div>
             </form>
