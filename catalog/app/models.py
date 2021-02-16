@@ -13,7 +13,7 @@ class Product(models.Model):
     title = models.CharField(max_length=30)
     desc = models.CharField(max_length=150)
     photo = models.ImageField(blank=True)
-    amount = models.PositiveSmallIntegerField()
+    amount = models.PositiveSmallIntegerField(default=1)
     price = models.PositiveSmallIntegerField(default=1000)
 
     def __str__(self):
@@ -21,7 +21,7 @@ class Product(models.Model):
 
 
 class Order(models.Model):
-    owner = models.ForeignKey(MyUser, on_delete=models.CASCADE, default=None)
+    owner = models.ForeignKey(MyUser, on_delete=models.CASCADE, default=None, related_name='orders')
     position = models.ForeignKey(Product, on_delete=models.CASCADE, default=None)
     quantity = models.PositiveSmallIntegerField(default=1)
     order_date = models.DateTimeField(auto_now_add=True)
